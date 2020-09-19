@@ -9,3 +9,7 @@ class Switch(app_manager.RyuApp):
 	def __init__(self, *args, **kwargs):
 		super(Switch, self).__init__(*args, **kwargs)
 
+	@set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
+	def event_PacketIn(self, ev):
+		PacketOut()
+
