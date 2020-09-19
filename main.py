@@ -12,4 +12,5 @@ class Switch(app_manager.RyuApp):
 	@set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
 	def event_PacketIn(self, ev):
 		PacketOut()
+		PacketOut()
 
