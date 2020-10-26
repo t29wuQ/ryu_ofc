@@ -12,6 +12,26 @@ class Switch(app_manager.RyuApp):
 		super(Switch, self).__init__(*args, **kwargs)
 		self.mac_to_port = {}
 
+	@set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
+	def event_PacketIn(self, ev):
+		msg = ev.msg
+		datapath = msg.datapath
+		pkt = packet.Packet(msg.data)
+		eth = pkt.get_protocols(ethernet.ethernet)[0]
+		ofproto = datapath.ofproto
+		parser = datapath.ofproto_parser
+		self.mac_to_port.setdefault(datapath.id, {})
+		self.mac_to_port[datapath.id][eth.src] = msg.match['in_port']
+		if eth.dst in self.mac_to_port[datapath.id]:
+			out_port = self.mac_to_port[datapath.id][eth.dst]
+		else:
+			out_port = ofproto.OFPP_FLOOD
+		if out_port != ofproto.OFPP_FLOOD:
+			datapath.send_msg(parser.OFPFlowMod(datapath=datapath, match = parser.OFPMatch(in_port = msg.match['in_port'], eth_dst = eth.dst, ), priority = 1, instructions = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, [parser.OFPActionOutput(out_port),]),], ))
+		if ofproto.OFP_NO_BUFFER == msg.buffer_id:
+			data = msg.data
+		datapath.send_msg(parser.OFPPacketOut(datapath=datapath, buffer_id = msg.buffer_id, match = parser.OFPMatch(in_port = msg.match['in_port'], ), actions = [parser.OFPActionOutput(out_port),], data = data, ))
+
 	@set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
 	def event_FeaturesRequest(self, ev):
 		msg = ev.msg
@@ -20,23 +40,5 @@ class Switch(app_manager.RyuApp):
 		ofproto = datapath.ofproto
 		datapath.send_msg(parser.OFPFlowMod(datapath=datapath, match = parser.OFPMatch(), priority = 0, instructions = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER),]),], ))
 
-	@set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
-	def event_PacketIn(self, ev):
-		msg = ev.msg
-		datapath = msg.datapath
-		self.mac_to_port.setdefault(datapath.id, {})
-		pkt = packet.Packet(msg.data)
-		eth = pkt.get_protocols(ethernet.ethernet)[0]
-		self.mac_to_port[datapath.id][eth.src] = msg.match['in_port']
-		if eth.dst in self.mac_to_port[datapath.id]:
-			out_port = self.mac_to_port[datapath.id][eth.dst]
-		else:
-			ofproto = datapath.ofproto
-			out_port = ofproto.OFPP_FLOOD
-		if out_port != ofproto.OFPP_FLOOD:
-			parser = datapath.ofproto_parser
-			datapath.send_msg(parser.OFPFlowMod(datapath=datapath, match = parser.OFPMatch(in_port = msg.match['in_port'], eth_dst = eth.dst, ), priority = 1, instructions = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, [parser.OFPActionOutput(out_port),]),], ))
-		if ofproto.OFP_NO_BUFFER == msg.buffer_id:
-			data = msg.data
-		datapath.send_msg(parser.OFPPacketOut(datapath=datapath, buffer_id = msg.buffer_id, match = parser.OFPMatch(in_port = msg.match['in_port'], ), actions = [parser.OFPActionOutput(out_port),], data = data, ))
+
 
