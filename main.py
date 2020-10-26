@@ -1,52 +1,45 @@
-# Copyright (C) 2011 Nippon Telegraph and Telephone Corporation.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
-# implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 from ryu.base import app_manager
 from ryu.controller import ofp_event
-from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER
+from ryu.controller.handler import MAIN_DISPATCHER
 from ryu.controller.handler import set_ev_cls
 from ryu.ofproto import ofproto_v1_5
-from ryu.lib.packet import packet
 from ryu.lib.packet import ethernet
-from ryu.lib.packet import ether_types
-
+from ryu.lib.packet import packet
 
 class Switch(app_manager.RyuApp):
-    OFP_VERSIONS = [ofproto_v1_5.OFP_VERSION]
+	OFP_VERSIONS = [ofproto_v1_5.OFP_VERSION]
+	def __init__(self, *args, **kwargs):
+		super(Switch, self).__init__(*args, **kwargs)
+		self.mac_to_port = {}
 
-    def __init__(self, *args, **kwargs):
-        super(Switch, self).__init__(*args, **kwargs)
-        self.mac_to_port = {}
+	@set_ev_cls(ofp_event.EventOFPSwitchFeatures, MAIN_DISPATCHER)
+	def event_FeaturesRequest(self, ev):
+		msg = ev.msg
+		datapath = msg.datapath
+		parser = datapath.ofproto_parser
+		ofproto = datapath.ofproto
+		datapath.send_msg(parser.OFPFlowMod(datapath=datapath, match = parser.OFPMatch(), priority = 0, instruction = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER),]),], ))
 
-    @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
-    def switch_features_handler(self, ev):
-        datapath = ev.msg.datapath
-        ofproto = datapath.ofproto
-        parser = datapath.ofproto_parser
+	@set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
+	def event_PacketIn(self, ev):
+		msg = ev.msg
+		datapath = msg.datapath
+		pkt = packet.Packet(msg.data)
+		eth = pkt.get_protocols(ethernet.ethernet)[0]
+		self.mac_to_port[datapath.id][eth.src] = msg.match['in_port']
+		parser = datapath.ofproto_parser
+		if eth.dst in self.mac_to_port[datapath.id]:
+			out_port = self.mac_to_port[datapath.id][eth.dst]
+		else:
+			ofproto = datapath.ofproto
+			out_port = ofproto.OFPP_FLOOD
+		if out_port != ofproto.OFPP_FLOOD:
+			datapath.send_msg(parser.OFPFlowMod(datapath=datapath, match = parser.OFPMatch(in_port = msg.match['in_port'], eth_dst = eth.dst, ), priority = 1, instruction = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, [parser.OFPActionOutput(out_port),]),], ))
+		if ofproto.OFP_NO_BUFFER == msg.buffer_id:
+			data = msg.data
+		datapath.send_msg(parser.OFPPacketOut(datapath=datapath, buffer_id = msg.buffer_id, match = parser.OFPMatch(in_port = msg.match['in_port'], ), actions = [parser.OFPActionOutput(out_port),], data = data, ))
 
-        # install table-miss flow entry
-        #
-        # We specify NO BUFFER to max_len of the output action due to
-        # OVS bug. At this moment, if we specify a lesser number, e.g.,
-        # 128, OVS will send Packet-In with invalid buffer_id and
-        # truncated packet data. In that case, we cannot output packets
-        # correctly.  The bug has been fixed in OVS v2.1.0.
-        match = parser.OFPMatch()
-        actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
-                                          ofproto.OFPCML_NO_BUFFER)]
-        self.add_flow(datapath, 0, match, actions)
+low(datapath, 0, match, actions)
 
     def add_flow(self, datapath, priority, match, actions):
         ofproto = datapath.ofproto
