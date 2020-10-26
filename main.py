@@ -12,7 +12,7 @@ class Switch(app_manager.RyuApp):
 		super(Switch, self).__init__(*args, **kwargs)
 		self.mac_to_port = {}
 
-	@set_ev_cls(ofp_event.EventOFPSwitchFeatures, MAIN_DISPATCHER)
+	@set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
 	def event_FeaturesRequest(self, ev):
 		msg = ev.msg
 		datapath = msg.datapath
