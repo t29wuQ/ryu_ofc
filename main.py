@@ -23,10 +23,12 @@ class Switch(app_manager.RyuApp):
 		msg = ev.msg
 		pkt = packet.Packet(msg.data)
 		v4 = pkt.get_protocols(ipv4.ipv4)
+		datapath = msg.datapath
+		parser = datapath.ofproto_parser
+		if is_auth(ip_address = v4.src, ):
+			permit = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, [parser.OFPActionOutput(2),]),]
 
-rt = ofproto.OFPP_FLOOD
-		if out_port != ofproto.OFPP_FLOOD:
-			datapath.send_msg(parser.OFPFlowMod(datapath=datapath, match = parser.OFPMatch(in_port = msg.match['in_port'], eth_dst = eth.dst, ), priority = 1, instructions = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, [parser.OFPActionOutput(out_port),]),], ))
+rity = 1, instructions = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, [parser.OFPActionOutput(out_port),]),], ))
 		if ofproto.OFP_NO_BUFFER == msg.buffer_id:
 			data = msg.data
 		datapath.send_msg(parser.OFPPacketOut(datapath=datapath, buffer_id = msg.buffer_id, match = parser.OFPMatch(in_port = msg.match['in_port'], ), actions = [parser.OFPActionOutput(out_port),], data = data, ))
