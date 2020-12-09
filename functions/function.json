@@ -1,0 +1,14 @@
+[
+    {
+        "name": "is_auth",
+        "description": "ログイン認証済みのIPアドレスかを確認",
+        "import": "from .functions import is_auth",
+        "args": [
+            {
+                "name": "ip_address",
+                "dataType": "string"
+            }
+        ],
+        "returnDataType": "bool"
+    }
+]

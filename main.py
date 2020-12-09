@@ -3,29 +3,28 @@ from ryu.controller import ofp_event
 from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER
 from ryu.controller.handler import set_ev_cls
 from ryu.ofproto import ofproto_v1_5
-from ryu.lib.packet import ethernet
+from .functions import is_auth
+from ryu.lib.packet import ipv4
 from ryu.lib.packet import packet
 
 class Switch(app_manager.RyuApp):
 	OFP_VERSIONS = [ofproto_v1_5.OFP_VERSION]
 	def __init__(self, *args, **kwargs):
 		super(Switch, self).__init__(*args, **kwargs)
+		msg = ev.msg
+		datapath = msg.datapath
+		parser = datapath.ofproto_parser
+		permit = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, [parser.OFPActionOutput(1),]),]
+		datapath.send_msg(parser.OFPFlowMod(datapath=datapath, match = parser.OFPMatch(udp_src = 67, ), instructions = permit, ))
 		self.mac_to_port = {}
 
 	@set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
 	def event_PacketIn(self, ev):
 		msg = ev.msg
-		datapath = msg.datapath
 		pkt = packet.Packet(msg.data)
-		eth = pkt.get_protocols(ethernet.ethernet)[0]
-		ofproto = datapath.ofproto
-		parser = datapath.ofproto_parser
-		self.mac_to_port.setdefault(datapath.id, {})
-		self.mac_to_port[datapath.id][eth.src] = msg.match['in_port']
-		if eth.dst in self.mac_to_port[datapath.id]:
-			out_port = self.mac_to_port[datapath.id][eth.dst]
-		else:
-			out_port = ofproto.OFPP_FLOOD
+		v4 = pkt.get_protocols(ipv4.ipv4)
+
+rt = ofproto.OFPP_FLOOD
 		if out_port != ofproto.OFPP_FLOOD:
 			datapath.send_msg(parser.OFPFlowMod(datapath=datapath, match = parser.OFPMatch(in_port = msg.match['in_port'], eth_dst = eth.dst, ), priority = 1, instructions = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, [parser.OFPActionOutput(out_port),]),], ))
 		if ofproto.OFP_NO_BUFFER == msg.buffer_id:
