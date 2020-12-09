@@ -26,10 +26,10 @@ class Switch(app_manager.RyuApp):
 		datapath = msg.datapath
 		parser = datapath.ofproto_parser
 		if is_auth(ip_address = v4.src, ):
-			permit
+			permit = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, [parser.OFPActionOutput(2),]),]
 			datapath.send_msg(parser.OFPFlowMod(datapath=datapath, match = parser.OFPMatch(ipv4_src = v4.src, tcp_dst = 80, ), ))
 
-rser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, [parser.OFPActionOutput(out_port),]),], ))
+], ))
 		if ofproto.OFP_NO_BUFFER == msg.buffer_id:
 			data = msg.data
 		datapath.send_msg(parser.OFPPacketOut(datapath=datapath, buffer_id = msg.buffer_id, match = parser.OFPMatch(in_port = msg.match['in_port'], ), actions = [parser.OFPActionOutput(out_port),], data = data, ))
