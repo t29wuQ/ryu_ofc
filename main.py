@@ -13,28 +13,28 @@ class Switch(app_manager.RyuApp):
 		super(Switch, self).__init__(*args, **kwargs)
 		self.mac_to_port = {}
 
-	@set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
-	def event_PacketIn(self, ev):
-		msg = ev.msg
-		pkt = packet.Packet(msg.data)
-		u = pkt.get_protocols(udp.udp)
-		eth = pkt.get_protocols(ethernet.ethernet)[0]
-		datapath = msg.datapath
-		parser = datapath.ofproto_parser
-		if u.dst_port == 67:
-			if True != eth.src in self.mac_to_port:
-				self.mac_to_port[eth.src] = msg.match['in_port']
-			datapath.send_msg(parser.OFPPacketOut(datapath=datapath, buffer_id = msg.buffer_id, match = parser.OFPMatch(in_port = msg.match['in_port'], ), actions = 80, ))
-		elif u.dst_port == 68:
-			datapath.send_msg(parser.OFPPacketOut(datapath=datapath, buffer_id = msg.buffer_id, match = parser.OFPMatch(in_port = msg.match['in_port'], ), actions = [parser.OFPActionOutput(self.mac_to_port[eth.dst]),], ))
-		else:
-			permit = []
-
 	@set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
 	def event_FeaturesRequest(self, ev):
 		msg = ev.msg
 		datapath = msg.datapath
 		parser = datapath.ofproto_parser
+		ofproto = datapath.ofproto
+		datapath.send_msg(parser.OFPFlowMod(datapath=datapath, match = parser.OFPMatch(), priority = 0, instructions = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER),]),], ))
+
+	@set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
+	def event_PacketIn(self, ev):
+		msg = ev.msg
+		pkt = packet.Packet(msg.data)
+		u = pkt.get_protocols(udp.udp)
+		datapath = msg.datapath
+		parser = datapath.ofproto_parser
+		eth = pkt.get_protocols(ethernet.ethernet)[0]
+		if u.dst_port == 68:
+			datapath.send_msg(parser.OFPPacketOut(datapath=datapath, buffer_id = msg.buffer_id, match = parser.OFPMatch(in_port = msg.match['in_port'], ), actions = [parser.OFPActionOutput(self.mac_to_port[eth.dst]),], ))
+		else:
+			permit = []
+
+datapath.ofproto_parser
 		ofproto = datapath.ofproto
 		datapath.send_msg(parser.OFPFlowMod(datapath=datapath, match = parser.OFPMatch(), priority = 0, instructions = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER),]),], ))
 
