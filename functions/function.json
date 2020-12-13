@@ -1,14 +1,49 @@
 [
     {
-        "name": "is_auth",
-        "description": "ログイン認証済みのIPアドレスかを確認",
-        "import": "from functions.is_auth import is_auth",
+        "name": "get_random_port",
+        "description": "利用されていないランダムなポート番号を返す",
+        "import": "from .functions.napt import get_port",
+        "args": [],
+        "returnDataType": "number"
+    },
+    {
+        "name": "new_port",
+        "description": "Port番号を割り当てる",
+        "import": "from functions.napt import new_port",
         "args": [
             {
-                "name": "ip_address",
+                "name": "ip_src",
+                "dataType": "string"
+            },
+            {
+                "name": "port_src",
+                "dataType": "number"
+            }
+        ],
+        "returnDataType": "number"
+    },
+    {
+        "name": "get_origin_ip",
+        "description": "送信元IPの取得",
+        "import": "from functions.napt import get_origin_ip",
+        "args": [
+            {
+                "name": "port_dst",
                 "dataType": "string"
             }
         ],
-        "returnDataType": "bool"
+        "returnDataType": "string"
+    },
+    {
+        "name": "get_origin_port",
+        "description": "送信元のPort番号の取得",
+        "import": "from functions.napt import get_origin_port",
+        "args": [
+            {
+                "name": "port_dst",
+                "dataType": "number"
+            }
+        ],
+        "returnDataType": "number"
     }
 ]
