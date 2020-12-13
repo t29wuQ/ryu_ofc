@@ -27,8 +27,9 @@ class Switch(app_manager.RyuApp):
 		if u.dst_port == 67:
 			if True != eth.src in self.mac_to_port:
 				self.mac_to_port[eth.src] = msg.match['in_port']
+				datapath.send_msg(parser.OFPFlowMod(datapath=datapath, match = parser.OFPMatch(eth_dst = eth.src, ), instructions = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, [parser.OFPActionOutput(msg.match['in_port']),]),], ))
 			datapath.send_msg(parser.OFPPacketOut(datapath=datapath, buffer_id = msg.buffer_id, match = parser.OFPMatch(in_port = msg.match['in_port'], ), actions = [parser.OFPActionOutput(1),], ))
-		elif u.dst_port == 68:
+		elif True:
 			datapath.send_msg(parser.OFPPacketOut(datapath=datapath, buffer_id = msg.buffer_id, match = parser.OFPMatch(in_port = msg.match['in_port'], ), actions = [parser.OFPActionOutput(self.mac_to_port[eth.dst]),], ))
 		else:
 			if is_auth(ip_address = v4.src, ):
