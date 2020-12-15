@@ -39,13 +39,3 @@ class Switch(app_manager.RyuApp):
 		parser = datapath.ofproto_parser
 		ofproto = datapath.ofproto
 		datapath.send_msg(parser.OFPFlowMod(datapath=datapath, match = parser.OFPMatch(), priority = 0, instructions = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER),]),], ))
-
-= msg.match['in_port'], ), actions = [parser.OFPActionSetField(ipv4_dst = get_origin_ip(port_dst = u.dst_port, ), udp_dst = get_origin_port(port_dst = u.dst_port, ), ), parser.OFPActionOutput(self.mac_to_port[eth.dst]),], ))
-		else:
-			if True != eth.src in self.mac_to_port:
-				self.mac_to_port[eth.src] = msg.match['in_port']
-			datapath.send_msg(parser.OFPPacketOut(datapath=datapath, buffer_id = msg.buffer_id, match = parser.OFPMatch(in_port = msg.match['in_port'], ), actions = [parser.OFPActionSetField(ipv4_src = "192.168.1.1", tcp_src = new_port(ip_src = v4.src, port_src = t.src_port, ), ), parser.OFPActionOutput(self.mac_to_port[eth.src]),], ))
-
-o = datapath.ofproto
-		datapath.send_msg(parser.OFPFlowMod(datapath=datapath, match = parser.OFPMatch(), priority = 0, instructions = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER),]),], ))
-
